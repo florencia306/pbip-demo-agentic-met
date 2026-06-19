@@ -1,0 +1,21 @@
+model LifeInsuranceAnalytics
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	discourageImplicitMeasures
+	sourceQueryCulture: en-GB
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_ProTooling = ["TMDL-Extension"]
+
+ref table product
+ref table customer
+ref table agency
+ref table underwriter
+ref table calendar
+ref table policies
+ref table claims
+ref table premiums
+
+ref cultureInfo en-US

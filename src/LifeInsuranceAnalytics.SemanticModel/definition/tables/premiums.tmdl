@@ -1,0 +1,97 @@
+table premiums
+
+	column premiumKey
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: PremiumKey
+		description: Primary key for premiums table
+
+	column policyKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: PolicyKey
+		description: Foreign key to policies table
+
+	column premiumDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: PremiumDate
+		description: Date premium payment was due or received
+
+	column dueDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: DueDate
+		description: Due date for payment
+
+	column amount
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: Amount
+		description: Premium amount
+
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		description: Payment status (Paid, Overdue, Pending, Partial)
+
+	column paymentMethod
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PaymentMethod
+		description: Payment method used
+
+	column sequenceNumber
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: SequenceNumber
+		description: Installment sequence number
+
+	measure 'Total Premiums Due' = SUM('premiums'[amount])
+		formatString: $ #,##0
+		description: Total premiums due
+
+	measure 'Premiums Paid' = 
+		CALCULATE(
+			SUM('premiums'[amount]),
+			FILTER('premiums', 'premiums'[status] IN {"Paid"})
+		)
+		formatString: $ #,##0
+		description: Total premiums paid on time
+
+	measure 'Premiums Overdue' = 
+		CALCULATE(
+			SUM('premiums'[amount]),
+			FILTER('premiums', 'premiums'[status] = "Overdue")
+		)
+		formatString: $ #,##0
+		description: Total premiums overdue
+
+	measure 'Premiums Pending' = 
+		CALCULATE(
+			SUM('premiums'[amount]),
+			FILTER('premiums', 'premiums'[status] IN {"Pending", "Partial"})
+		)
+		formatString: $ #,##0
+		description: Total premiums pending or partially paid
+
+	measure 'Payment Rate' = 
+		DIVIDE(
+			[Premiums Paid],
+			[Total Premiums Due],
+			0
+		)
+		formatString: 0.00%
+		description: Percentage of premiums paid on time
+
+	measure 'Premium Payment Count' = COUNTROWS('premiums')
+		formatString: #,##0
+		description: Total count of premium payment records

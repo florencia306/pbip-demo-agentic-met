@@ -1,0 +1,119 @@
+table claims
+
+	column claimKey
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ClaimKey
+		description: Primary key for claims table
+
+	column claimNumber
+		dataType: string
+		isDefaultLabel
+		summarizeBy: none
+		sourceColumn: ClaimNumber
+		description: Unique claim number
+
+	column policyKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: PolicyKey
+		description: Foreign key to policies table
+
+	column claimDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: ClaimDate
+		description: Date of claim occurrence
+
+	column reportedDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: ReportedDate
+		description: Date claim was reported
+
+	column claimType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ClaimType
+		description: Type of claim (Muerte, Invalidez, Accidente, etc.)
+
+	column claimAmount
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: ClaimAmount
+		description: Amount claimed
+
+	column paidAmount
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: PaidAmount
+		description: Amount paid
+
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		description: Claim status (Reported, Approved, Denied, Paid)
+
+	column approvalDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: ApprovalDate
+		description: Date of approval/denial
+
+	column paymentDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: PaymentDate
+		description: Date claim was paid
+
+	column deductible
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: Deductible
+		description: Deductible applied to claim
+
+	measure 'Total Claims' = COUNTROWS('claims')
+		formatString: #,##0
+		description: Total count of claims reported
+
+	measure 'Claims Paid' = 
+		CALCULATE(
+			[Total Claims],
+			FILTER('claims', 'claims'[status] = "Paid")
+		)
+		formatString: #,##0
+		description: Count of paid claims
+
+	measure 'Approved Claims' = 
+		CALCULATE(
+			[Total Claims],
+			FILTER('claims', 'claims'[status] IN {"Approved", "Paid"})
+		)
+		formatString: #,##0
+		description: Count of approved claims
+
+	measure 'Claim Approval Rate' = 
+		DIVIDE([Approved Claims], [Total Claims], 0)
+		formatString: 0.00%
+		description: Percentage of claims approved
+
+	measure 'Total Claim Amount' = SUM('claims'[claimAmount])
+		formatString: $ #,##0
+		description: Total amount of all claims
+
+	measure 'Total Paid Amount' = SUM('claims'[paidAmount])
+		formatString: $ #,##0
+		description: Total amount paid out on claims
+
+	measure 'Total Deductible' = SUM('claims'[deductible])
+		formatString: $ #,##0
+		description: Total deductibles applied

@@ -1,0 +1,87 @@
+table product
+
+	column productKey
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ProductKey
+		description: Primary key for product table
+
+	column productName
+		dataType: string
+		isDefaultLabel
+		summarizeBy: none
+		sourceColumn: ProductName
+		description: Name of product (e.g., Vida Individual)
+
+	column productCode
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductCode
+		description: Product code for reference
+
+	column productType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductType
+		description: Type of product (Vida Individual, Vida Colectivo, Vida Temporal, Vida Universal, Accidentes Personales)
+
+	column coverageType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CoverageType
+		description: Type of insurance coverage
+
+	column maxSumAssured
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: MaxSumAssured
+		description: Maximum sum assured for this product
+
+	column tacPercentage
+		dataType: decimal
+		formatString: 0.00%
+		summarizeBy: none
+		sourceColumn: TACPercentage
+		description: Commission percentage (TAC)
+
+	column minimumAge
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: MinimumAge
+		description: Minimum age for underwriting
+
+	column maximumAge
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: MaximumAge
+		description: Maximum age for underwriting
+
+	column isActive
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: IsActive
+		description: Whether product is currently active
+
+	column createdDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: CreatedDate
+		description: Date product was created
+
+	measure '# Products' = COUNTROWS('product')
+		formatString: #,##0
+		description: Total count of products
+
+	measure '# Active Products' = 
+		CALCULATE(
+			[# Products],
+			FILTER('product', 'product'[isActive] = TRUE())
+		)
+		formatString: #,##0
+		description: Count of active products

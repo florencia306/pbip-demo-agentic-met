@@ -1,0 +1,47 @@
+table underwriter
+
+	column underwriterKey
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: UnderwriterKey
+		description: Primary key for underwriter table
+
+	column underwriterName
+		dataType: string
+		isDefaultLabel
+		summarizeBy: none
+		sourceColumn: UnderwriterName
+		description: Name of underwriter/policy issuer
+
+	column department
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Department
+		description: Department (Individual, Colectivo, Claims)
+
+	column experienceYears
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ExperienceYears
+		description: Years of experience in insurance
+
+	column specialization
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Specialization
+		description: Area of specialization
+
+	column maxApprovalAmount
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: MaxApprovalAmount
+		description: Maximum approval limit for underwriter
+
+	measure '# Underwriters' = COUNTROWS('underwriter')
+		formatString: #,##0
+		description: Total count of underwriters

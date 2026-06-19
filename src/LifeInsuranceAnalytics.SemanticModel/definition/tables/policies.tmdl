@@ -1,0 +1,191 @@
+table policies
+
+	column policyKey
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: PolicyKey
+		description: Primary key for policies table
+
+	column policyNumber
+		dataType: string
+		isDefaultLabel
+		summarizeBy: none
+		sourceColumn: PolicyNumber
+		description: Unique policy number
+
+	column productKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ProductKey
+		description: Foreign key to product table
+
+	column customerKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: CustomerKey
+		description: Foreign key to customer table
+
+	column agencyKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: AgencyKey
+		description: Foreign key to agency table
+
+	column underwriterKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: UnderwriterKey
+		description: Foreign key to underwriter table
+
+	column issueDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: IssueDate
+		description: Date policy was issued/underwritten
+
+	column effectiveDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: EffectiveDate
+		description: Date coverage becomes effective
+
+	column expiryDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: ExpiryDate
+		description: Date current policy term expires
+
+	column maturityDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: MaturityDate
+		description: Date policy reaches maturity (if applicable)
+
+	column renewalDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: RenewalDate
+		description: Date policy eligible for renewal
+
+	column sumAssured
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: SumAssured
+		description: Sum assured amount
+
+	column annualPremium
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: AnnualPremium
+		description: Annual premium amount
+
+	column premiumFrequency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PremiumFrequency
+		description: Premium payment frequency (Monthly, Quarterly, Annual)
+
+	column paymentMethod
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PaymentMethod
+		description: Payment method
+
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		description: Policy status (Active, Expired, Cancelled, Suspended)
+
+	column cancellationDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: CancellationDate
+		description: Date policy was cancelled (if applicable)
+
+	column cancellationReason
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CancellationReason
+		description: Reason for cancellation
+
+	column underwritingDecision
+		dataType: string
+		summarizeBy: none
+		sourceColumn: UnderwritingDecision
+		description: Underwriting decision (Approved, Conditional, Rejected)
+
+	column medicalRequired
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: MedicalRequired
+		description: Whether medical exam was required
+
+	column riderCount
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: RiderCount
+		description: Number of riders attached to policy
+
+	column commissionAmount
+		dataType: decimal
+		formatString: $ #,##0.00
+		summarizeBy: none
+		sourceColumn: CommissionAmount
+		description: Commission amount paid for this policy
+
+	measure 'Issued Policies' = COUNTROWS('policies')
+		formatString: #,##0
+		description: Total count of policies issued
+
+	measure 'Active Policies' = 
+		CALCULATE(
+			[Issued Policies],
+			FILTER('policies', 'policies'[status] IN {"Active", "Suspended"})
+		)
+		formatString: #,##0
+		description: Count of currently active policies
+
+	measure 'Premium Income' = SUM('policies'[annualPremium])
+		formatString: $ #,##0
+		description: Total annual premium income from all policies
+
+	measure 'Average Premium' = 
+		DIVIDE([Premium Income], [Issued Policies], 0)
+		formatString: $ #,##0
+		description: Average premium per policy
+
+	measure 'Sum Assured' = SUM('policies'[sumAssured])
+		formatString: $ #,##0
+		description: Total sum assured across all policies
+
+	measure 'Commission Paid' = SUM('policies'[commissionAmount])
+		formatString: $ #,##0
+		description: Total commission paid to agencies
+
+	measure 'Cancelled Policies' = 
+		CALCULATE(
+			[Issued Policies],
+			FILTER('policies', 'policies'[status] = "Cancelled")
+		)
+		formatString: #,##0
+		description: Count of cancelled policies
+
+	measure 'Cancellation Rate' = 
+		DIVIDE([Cancelled Policies], [Issued Policies], 0)
+		formatString: 0.00%
+		description: Percentage of policies cancelled

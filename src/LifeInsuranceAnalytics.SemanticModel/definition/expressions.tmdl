@@ -1,0 +1,8 @@
+expression Parameter_SqlServer = "your_server.database.windows.net" 
+	meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression Parameter_SqlDatabase = "InsuranceAnalytics" 
+	meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression Parameter_Environment = "DEV" 
+	meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]

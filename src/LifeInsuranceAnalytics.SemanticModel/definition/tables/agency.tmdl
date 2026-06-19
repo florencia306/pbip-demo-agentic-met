@@ -1,0 +1,66 @@
+table agency
+
+	column agencyKey
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: AgencyKey
+		description: Primary key for agency table
+
+	column agencyName
+		dataType: string
+		isDefaultLabel
+		summarizeBy: none
+		sourceColumn: AgencyName
+		description: Name of sales agency/channel
+
+	column agencyType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AgencyType
+		description: Type of agency (Directo, Broker, Empleado, Partner)
+
+	column manager
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manager
+		description: Name of agency manager
+
+	column region
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Region
+		description: Geographic region where agency operates
+
+	column branch
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Branch
+		description: Branch location
+
+	column commissionRate
+		dataType: decimal
+		formatString: 0.00%
+		summarizeBy: none
+		sourceColumn: CommissionRate
+		description: Commission rate for this agency
+
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		description: Agency status (Active, Inactive)
+
+	measure '# Agencies' = COUNTROWS('agency')
+		formatString: #,##0
+		description: Total count of agencies
+
+	measure '# Active Agencies' = 
+		CALCULATE(
+			[# Agencies],
+			FILTER('agency', 'agency'[status] = "Active")
+		)
+		formatString: #,##0
+		description: Count of active agencies
