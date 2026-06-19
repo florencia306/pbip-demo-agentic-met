@@ -1,0 +1,109 @@
+table calendar
+
+	column dateKey
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: DateKey
+		description: Surrogate key for date
+
+	column date
+		dataType: dateTime
+		isKey
+		summarizeBy: none
+		sourceColumn: Date
+		description: Calendar date
+
+	column dayOfWeek
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: DayOfWeek
+		description: Day of week (1-7)
+
+	column dayName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DayName
+		description: Name of day (Monday, Tuesday, etc.)
+
+	column dayOfMonth
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: DayOfMonth
+		description: Day of month (1-31)
+
+	column weekOfYear
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: WeekOfYear
+		description: Week number of year
+
+	column month
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: Month
+		description: Month number (1-12)
+
+	column monthName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MonthName
+		description: Name of month (January, February, etc.)
+
+	column quarter
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: Quarter
+		description: Quarter of year (1-4)
+
+	column year
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: Year
+		description: Year value
+
+	column weekStartDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: WeekStartDate
+		description: Start date of week
+
+	column monthStartDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: MonthStartDate
+		description: Start date of month
+
+	column quarterStartDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: QuarterStartDate
+		description: Start date of quarter
+
+	column yearStartDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: YearStartDate
+		description: Start date of year
+
+	column cohortYear
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: CohortYear
+		description: Year of cohort for retention analysis
+
+	column cohortMonth
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: CohortMonth
+		description: Month of cohort for retention analysis

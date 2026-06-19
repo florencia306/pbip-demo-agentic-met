@@ -1,0 +1,7 @@
+{
+  "version": "1.0",
+  "compat": {
+    "power_bi_desktop": "2.130",
+    "power_bi_cloud": "2024.2"
+  }
+}

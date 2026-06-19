@@ -1,0 +1,77 @@
+relationship 'policies-product'
+	fromColumn: 'policies'.'productKey'
+	toColumn: 'product'.'productKey'
+	fromCardinality: many
+	toCardinality: one
+
+relationship 'policies-customer'
+	fromColumn: 'policies'.'customerKey'
+	toColumn: 'customer'.'customerKey'
+	fromCardinality: many
+	toCardinality: one
+
+relationship 'policies-agency'
+	fromColumn: 'policies'.'agencyKey'
+	toColumn: 'agency'.'agencyKey'
+	fromCardinality: many
+	toCardinality: one
+
+relationship 'policies-underwriter'
+	fromColumn: 'policies'.'underwriterKey'
+	toColumn: 'underwriter'.'underwriterKey'
+	fromCardinality: many
+	toCardinality: one
+
+// Primary date relationship (issue date)
+relationship 'policies-calendar-issue'
+	fromColumn: 'policies'.'issueDate'
+	toColumn: 'calendar'.'date'
+	fromCardinality: many
+	toCardinality: one
+	isActive: true
+	crossFilteringBehavior: bothDirections
+
+// Inactive relationships for alternative date analysis
+relationship 'policies-calendar-expiry'
+	fromColumn: 'policies'.'expiryDate'
+	toColumn: 'calendar'.'date'
+	fromCardinality: many
+	toCardinality: one
+	isActive: false
+
+relationship 'policies-calendar-renewal'
+	fromColumn: 'policies'.'renewalDate'
+	toColumn: 'calendar'.'date'
+	fromCardinality: many
+	toCardinality: one
+	isActive: false
+
+// Claims relationships
+relationship 'claims-policies'
+	fromColumn: 'claims'.'policyKey'
+	toColumn: 'policies'.'policyKey'
+	fromCardinality: many
+	toCardinality: one
+
+relationship 'claims-calendar'
+	fromColumn: 'claims'.'claimDate'
+	toColumn: 'calendar'.'date'
+	fromCardinality: many
+	toCardinality: one
+	isActive: true
+	crossFilteringBehavior: bothDirections
+
+// Premiums relationships
+relationship 'premiums-policies'
+	fromColumn: 'premiums'.'policyKey'
+	toColumn: 'policies'.'policyKey'
+	fromCardinality: many
+	toCardinality: one
+
+relationship 'premiums-calendar'
+	fromColumn: 'premiums'.'premiumDate'
+	toColumn: 'calendar'.'date'
+	fromCardinality: many
+	toCardinality: one
+	isActive: true
+	crossFilteringBehavior: bothDirections

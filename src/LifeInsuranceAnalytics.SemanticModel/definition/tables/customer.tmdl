@@ -1,0 +1,84 @@
+table customer
+
+	column customerKey
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: CustomerKey
+		description: Primary key for customer table
+
+	column customerCode
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CustomerCode
+		description: Unique customer code
+
+	column customerName
+		dataType: string
+		isDefaultLabel
+		summarizeBy: none
+		sourceColumn: CustomerName
+		description: Name of customer/policyholder
+
+	column documentType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DocumentType
+		description: Type of identification document (RUT, CEDULA, PASAPORTE)
+
+	column documentNumber
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DocumentNumber
+		description: Document identification number
+
+	column age
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: Age
+		description: Age of customer at policy issue
+
+	column gender
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Gender
+		description: Gender (M, F, O)
+
+	column maritalStatus
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaritalStatus
+		description: Marital status
+
+	column occupation
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Occupation
+		description: Occupation or profession
+
+	column riskProfileSegment
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RiskProfileSegment
+		description: Risk profile (Low, Medium, High)
+
+	column createdDate
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: CreatedDate
+		description: Date customer was registered
+
+	measure '# Customers' = COUNTROWS('customer')
+		formatString: #,##0
+		description: Total count of customers
+
+	measure '# Active Customers' = 
+		CALCULATE(
+			[# Customers],
+			FILTER('policies', 'policies'[status] IN {"Active", "Suspended"})
+		)
+		formatString: #,##0
+		description: Count of customers with active policies
