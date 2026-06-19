@@ -1,0 +1,883 @@
+################################################################################
+# INSURANCE ANALYTICS SPECIFICATION
+# This specification completely describes LifeInsuranceAnalytics model
+# Generated from: Phase 1 manual implementation (June 2026)
+# Framework: pbip-demo-agentic (Reusable Generator)
+################################################################################
+
+metadata:
+  domain: insurance
+  subdomain: life_insurance
+  name: LifeInsuranceAnalytics
+  version: 1.0
+  created_by: analyst
+  date: 2026-06-18
+  
+  labels:
+    en: Life Insurance Analytics
+    es: Análisis de Seguros de Vida
+  
+  use_case: "Comprehensive analytics for life insurance policies, claims, and retention tracking"
+
+################################################################################
+# DOMAIN CONFIGURATION
+################################################################################
+domain:
+  industry: insurance
+  region: LATAM
+  
+  # Insurance-specific business rules
+  rules:
+    TAC_percentage_range: [3, 6]
+    loss_ratio_healthy_range: [60, 80]
+    retention_rate_target: 85
+    persistency_rate_target: 90
+    premium_payment_grace_days: 30
+    claim_approval_threshold: 0.95
+    
+  # Key business metrics
+  key_metrics:
+    - name: Loss Ratio
+      formula: "Claims Paid / Premium Income"
+      domain_range: [60, 80]
+      interpretation: "% of premiums claimed. 60-80% is healthy"
+      
+    - name: Retention Rate
+      formula: "(Renewed Policies / Eligible for Renewal) × 100"
+      domain_range: [80, 95]
+      interpretation: "% of policies renewed at anniversary"
+      
+    - name: Payment Rate
+      formula: "(Paid Premiums / Due Premiums) × 100"
+      domain_range: [92, 98]
+      interpretation: "% of premiums paid on-time"
+      
+    - name: Cancellation Rate
+      formula: "(Cancelled Policies / Total Policies) × 100"
+      domain_range: [5, 15]
+      interpretation: "% of policies cancelled"
+
+################################################################################
+# FACT TABLES (Events/Transactions)
+################################################################################
+facts:
+  # PRIMARY FACT TABLE
+  - name: policies
+    type: primary
+    description: "Policy issuance events - one row per policy"
+    grain: "one row per policy"
+    key: PolicyKey
+    
+    # Events (each generates base measures)
+    events:
+      - event_name: policy_issued
+        metric_type: count
+        metric_name: Issued Policies
+        description: "Total policies issued (all statuses)"
+        filter: null
+        
+      - event_name: active_policies
+        metric_type: count
+        metric_name: Active Policies
+        description: "Currently active or suspended policies"
+        filter: "Status IN {'Active', 'Suspended'}"
+        
+      - event_name: cancelled_policies
+        metric_type: count
+        metric_name: Cancelled Policies
+        description: "Policies that have been cancelled"
+        filter: "Status = 'Cancelled'"
+        
+      - event_name: premium_income
+        metric_type: sum
+        column: AnnualPremium
+        metric_name: Premium Income
+        description: "Total annual premiums from all policies"
+        format: currency
+        
+      - event_name: sum_assured_total
+        metric_type: sum
+        column: SumAssured
+        metric_name: Sum Assured
+        description: "Total insured value across all policies"
+        format: currency
+        
+      - event_name: commission_paid
+        metric_type: sum
+        column: CommissionAmount
+        metric_name: Commission Paid
+        description: "Total commissions paid to agencies"
+        format: currency
+        
+      - event_name: cancellation_rate
+        metric_type: calculated
+        metric_name: Cancellation Rate
+        formula: "[Cancelled Policies] / [Issued Policies]"
+        format: percentage
+    
+    # Columns (from AzureSQLSchema.csv)
+    columns:
+      - name: PolicyKey
+        type: int64
+        constraint: PK
+        nullable: false
+        description: "Primary key"
+        
+      - name: PolicyNumber
+        type: string
+        nullable: false
+        description: "Unique policy identifier"
+        
+      - name: ProductKey
+        type: int64
+        constraint: FK
+        nullable: false
+        references: product.ProductKey
+        description: "Foreign key to product dimension"
+        
+      - name: CustomerKey
+        type: int64
+        constraint: FK
+        nullable: false
+        references: customer.CustomerKey
+        description: "Foreign key to customer dimension"
+        
+      - name: AgencyKey
+        type: int64
+        constraint: FK
+        nullable: false
+        references: agency.AgencyKey
+        description: "Foreign key to agency dimension"
+        
+      - name: UnderwriterKey
+        type: int64
+        constraint: FK
+        nullable: false
+        references: underwriter.UnderwriterKey
+        description: "Foreign key to underwriter dimension"
+        
+      - name: IssueDate
+        type: date
+        nullable: false
+        description: "Date policy was issued/underwritten"
+        
+      - name: EffectiveDate
+        type: date
+        nullable: false
+        description: "Date coverage becomes effective"
+        
+      - name: ExpiryDate
+        type: date
+        nullable: false
+        description: "Date current policy term expires"
+        
+      - name: MaturityDate
+        type: date
+        nullable: true
+        description: "Date policy reaches maturity"
+        
+      - name: RenewalDate
+        type: date
+        nullable: true
+        description: "Date policy eligible for renewal"
+        
+      - name: SumAssured
+        type: decimal
+        nullable: false
+        format: currency
+        description: "Sum assured amount"
+        
+      - name: AnnualPremium
+        type: decimal
+        nullable: false
+        format: currency
+        description: "Annual premium amount"
+        
+      - name: PremiumFrequency
+        type: string
+        nullable: false
+        values: ["Monthly", "Quarterly", "Annual"]
+        description: "Premium payment frequency"
+        
+      - name: Status
+        type: string
+        nullable: false
+        values: ["Active", "Expired", "Cancelled", "Suspended"]
+        description: "Policy status"
+        
+      - name: CancellationDate
+        type: date
+        nullable: true
+        description: "Date policy was cancelled"
+        
+      - name: CancellationReason
+        type: string
+        nullable: true
+        description: "Reason for cancellation"
+        
+      - name: CommissionAmount
+        type: decimal
+        nullable: false
+        format: currency
+        description: "Commission amount for this policy"
+
+  # SECONDARY FACT TABLES
+  - name: claims
+    type: secondary
+    description: "Claim events - one row per claim"
+    grain: "one row per claim"
+    key: ClaimKey
+    
+    events:
+      - event_name: total_claims
+        metric_type: count
+        metric_name: Total Claims
+        
+      - event_name: claims_paid
+        metric_type: count
+        metric_name: Claims Paid
+        filter: "Status = 'Paid'"
+        
+      - event_name: approved_claims
+        metric_type: count
+        metric_name: Approved Claims
+        filter: "Status IN {'Approved', 'Paid'}"
+        
+      - event_name: claim_approval_rate
+        metric_type: calculated
+        metric_name: Claim Approval Rate
+        formula: "[Approved Claims] / [Total Claims]"
+        format: percentage
+        
+      - event_name: claim_amount_total
+        metric_type: sum
+        column: ClaimAmount
+        metric_name: Total Claim Amount
+        format: currency
+        
+      - event_name: amount_paid
+        metric_type: sum
+        column: PaidAmount
+        metric_name: Total Paid Amount
+        format: currency
+    
+    columns:
+      - name: ClaimKey
+        type: int64
+        constraint: PK
+        nullable: false
+        
+      - name: ClaimNumber
+        type: string
+        nullable: false
+        
+      - name: PolicyKey
+        type: int64
+        constraint: FK
+        nullable: false
+        references: policies.PolicyKey
+        
+      - name: ClaimDate
+        type: date
+        nullable: false
+        description: "Date of claim occurrence"
+        
+      - name: ReportedDate
+        type: date
+        nullable: false
+        description: "Date claim was reported"
+        
+      - name: ClaimType
+        type: string
+        nullable: false
+        values: ["Muerte", "Invalidez", "Accidente", "Enfermedad"]
+        
+      - name: ClaimAmount
+        type: decimal
+        nullable: false
+        format: currency
+        
+      - name: PaidAmount
+        type: decimal
+        nullable: false
+        format: currency
+        
+      - name: Status
+        type: string
+        nullable: false
+        values: ["Reported", "Approved", "Denied", "Paid"]
+        
+      - name: Deductible
+        type: decimal
+        nullable: false
+        format: currency
+
+  - name: premiums
+    type: secondary
+    description: "Premium payment records - monthly installments"
+    grain: "one row per premium payment"
+    key: PremiumKey
+    
+    events:
+      - event_name: premiums_due
+        metric_type: sum
+        column: Amount
+        metric_name: Total Premiums Due
+        format: currency
+        
+      - event_name: premiums_paid
+        metric_type: sum
+        column: Amount
+        metric_name: Premiums Paid
+        filter: "Status = 'Paid'"
+        format: currency
+        
+      - event_name: premiums_overdue
+        metric_type: sum
+        column: Amount
+        metric_name: Premiums Overdue
+        filter: "Status = 'Overdue'"
+        format: currency
+        
+      - event_name: payment_rate
+        metric_type: calculated
+        metric_name: Payment Rate
+        formula: "[Premiums Paid] / [Total Premiums Due]"
+        format: percentage
+    
+    columns:
+      - name: PremiumKey
+        type: int64
+        constraint: PK
+      - name: PolicyKey
+        type: int64
+        constraint: FK
+        references: policies.PolicyKey
+      - name: PremiumDate
+        type: date
+      - name: DueDate
+        type: date
+      - name: Amount
+        type: decimal
+        format: currency
+      - name: Status
+        type: string
+        values: ["Paid", "Overdue", "Pending", "Partial"]
+      - name: SequenceNumber
+        type: int64
+
+################################################################################
+# DIMENSIONS
+################################################################################
+dimensions:
+  - name: product
+    type: attribute
+    key: ProductKey
+    description: "Insurance products offered"
+    
+    attributes:
+      - name: ProductType
+        type: string
+        description: "Type of product (5 categories)"
+        values: 
+          - Vida Individual
+          - Vida Colectivo
+          - Vida Temporal
+          - Vida Universal
+          - Accidentes Personales
+      
+      - name: ProductName
+        type: string
+        is_default_label: true
+        
+      - name: ProductCode
+        type: string
+      
+      - name: CoverageType
+        type: string
+      
+      - name: MaxSumAssured
+        type: decimal
+        format: currency
+      
+      - name: TACPercentage
+        type: decimal
+        format: percentage
+      
+      - name: MinimumAge
+        type: int64
+      
+      - name: MaximumAge
+        type: int64
+    
+    hierarchies:
+      - name: Product Hierarchy
+        levels: [ProductType, ProductName]
+
+  - name: customer
+    type: attribute
+    key: CustomerKey
+    description: "Policyholders/Insureds"
+    
+    attributes:
+      - name: CustomerName
+        type: string
+        is_default_label: true
+      
+      - name: DocumentType
+        type: string
+        values: ["RUT", "CEDULA", "PASAPORTE"]
+      
+      - name: Age
+        type: int64
+      
+      - name: Gender
+        type: string
+        values: ["M", "F", "O"]
+      
+      - name: RiskProfileSegment
+        type: string
+        values: ["Low", "Medium", "High"]
+      
+      - name: MaritalStatus
+        type: string
+        values: ["Single", "Married", "Divorced", "Widowed"]
+
+  - name: agency
+    type: attribute
+    key: AgencyKey
+    description: "Sales channels and distribution partners"
+    
+    attributes:
+      - name: AgencyName
+        type: string
+        is_default_label: true
+      
+      - name: AgencyType
+        type: string
+        values: ["Directo", "Broker", "Empleado", "Partner"]
+      
+      - name: Region
+        type: string
+      
+      - name: Manager
+        type: string
+      
+      - name: CommissionRate
+        type: decimal
+        format: percentage
+    
+    hierarchies:
+      - name: Organization Hierarchy
+        levels: [Region, Manager, AgencyName]
+
+  - name: underwriter
+    type: attribute
+    key: UnderwriterKey
+    description: "Policy issuers and underwriting team"
+    
+    attributes:
+      - name: UnderwriterName
+        type: string
+        is_default_label: true
+      
+      - name: Department
+        type: string
+        values: ["Individual", "Colectivo", "Claims"]
+      
+      - name: ExperienceYears
+        type: int64
+
+################################################################################
+# TIME DIMENSION
+################################################################################
+time_dimension:
+  name: calendar
+  grain: daily
+  key: DateKey
+  
+  # Standard columns (always included)
+  standard_columns:
+    - date: "Date value"
+    - year: "Calendar year"
+    - quarter: "Quarter (1-4)"
+    - month: "Month (1-12)"
+    - week: "Week of year"
+    - day_of_week: "Day (1-7)"
+    - day_name: "Day name"
+    - month_name: "Month name"
+    - fiscal_year: "Fiscal year"
+    - fiscal_quarter: "Fiscal quarter"
+  
+  # Domain-specific columns for insurance
+  domain_columns:
+    - cohort_year: "Year of issue cohort (for retention analysis)"
+    - cohort_month: "Month of issue cohort (for retention analysis)"
+
+################################################################################
+# RELATIONSHIPS
+################################################################################
+relationships:
+  # Policies to Dimensions
+  - name: policies-product
+    fact: policies
+    dimension: product
+    on_column: ProductKey
+    cardinality: many_to_one
+    is_active: true
+    cross_filtering: both_directions
+
+  - name: policies-customer
+    fact: policies
+    dimension: customer
+    on_column: CustomerKey
+    cardinality: many_to_one
+    is_active: true
+
+  - name: policies-agency
+    fact: policies
+    dimension: agency
+    on_column: AgencyKey
+    cardinality: many_to_one
+    is_active: true
+
+  - name: policies-underwriter
+    fact: policies
+    dimension: underwriter
+    on_column: UnderwriterKey
+    cardinality: many_to_one
+    is_active: true
+
+  # Policies to Calendar (Multi-date with Active/Inactive)
+  - name: policies-calendar-issue
+    fact: policies
+    dimension: calendar
+    on_column: IssueDate
+    cardinality: many_to_one
+    is_active: true
+    cross_filtering: both_directions
+    comment: "Primary relationship for policy issuance analysis"
+
+  - name: policies-calendar-expiry
+    fact: policies
+    dimension: calendar
+    on_column: ExpiryDate
+    cardinality: many_to_one
+    is_active: false
+    comment: "Inactive - use USERELATIONSHIP() for expiry analysis"
+
+  - name: policies-calendar-renewal
+    fact: policies
+    dimension: calendar
+    on_column: RenewalDate
+    cardinality: many_to_one
+    is_active: false
+    comment: "Inactive - use USERELATIONSHIP() for renewal analysis"
+
+  # Claims to Facts
+  - name: claims-policies
+    fact: claims
+    fact_reference: policies
+    on_column: PolicyKey
+    cardinality: many_to_one
+    is_active: true
+
+  - name: claims-calendar
+    fact: claims
+    dimension: calendar
+    on_column: ClaimDate
+    cardinality: many_to_one
+    is_active: true
+    cross_filtering: both_directions
+
+  # Premiums to Facts
+  - name: premiums-policies
+    fact: premiums
+    fact_reference: policies
+    on_column: PolicyKey
+    cardinality: many_to_one
+
+  - name: premiums-calendar
+    fact: premiums
+    dimension: calendar
+    on_column: PremiumDate
+    cardinality: many_to_one
+    is_active: true
+    cross_filtering: both_directions
+
+################################################################################
+# ADVANCED MEASURES (High-level DAX)
+################################################################################
+advanced_measures:
+  - name: Loss Ratio
+    category: profitability
+    description: "Claims Paid / Premium Income. Healthy range: 60-80%"
+    fact_relationship: claims → policies
+    formula: "[Total Paid Amount] / [Premium Income]"
+    format: percentage_0_2
+    interpretation: "Lower is better profit; 60-80% is typical"
+
+  - name: Retention Rate
+    category: retention
+    description: "% of policies renewed at anniversary"
+    formula: |
+      DIVIDE(
+        CALCULATE([Issued Policies], 
+                  FILTER('policies', 'policies'[Status] = "Renewed")),
+        CALCULATE([Issued Policies],
+                  FILTER('policies', 'policies'[Status] IN {"Active", "Expired"})),
+        0
+      )
+    format: percentage_2
+    interpretation: "Target: 85%+"
+
+  - name: Persistency Rate
+    category: retention
+    description: "1 - Cancellation Rate"
+    formula: "1 - [Cancellation Rate]"
+    format: percentage_2
+    interpretation: "% of policies NOT cancelled"
+
+  - name: Premium Payment Rate
+    category: cash_flow
+    description: "% of premiums paid on time"
+    fact_relationship: premiums → policies
+    formula: "[Premiums Paid] / [Total Premiums Due]"
+    format: percentage_1
+    interpretation: "Target: 92-98%"
+
+  - name: Commission as % of Premium
+    category: financial
+    description: "Average commission rate"
+    formula: "[Commission Paid] / [Premium Income]"
+    format: percentage_2
+
+################################################################################
+# SECURITY (Row-Level Security Roles)
+################################################################################
+security:
+  roles:
+    - name: Regional Manager
+      description: "Can see all agencies in their region"
+      table: agency
+      filter_column: Region
+      filter_type: user_attribute
+      user_attribute: region
+      
+    - name: Agency Manager
+      description: "Can see only their agency's data"
+      table: agency
+      filter_column: AgencyName
+      filter_type: user_attribute
+      user_attribute: agency
+      
+    - name: Underwriter
+      description: "Can see policies they underwritten"
+      table: policies
+      filter_column: UnderwriterName
+      filter_type: user_attribute
+      user_attribute: underwriter
+      
+    - name: Executive
+      description: "No filters - sees all data"
+      filter: null
+
+################################################################################
+# SAMPLE DATA GENERATION
+################################################################################
+sample_data:
+  # Row counts for synthetic data
+  row_counts:
+    calendar: 3650                         # 10 years
+    product: 5
+    customer: 1000
+    agency: 50
+    underwriter: 100
+    policies: 10000
+    claims: 800
+    premiums: 30000
+  
+  # Generation rules for realistic data
+  generation_rules:
+    product:
+      - row: [1, "Vida Individual", "VI-001", "Individual Life", 500000, 0.045, 18, 75]
+      - row: [2, "Vida Colectivo", "VC-002", "Group Life", 1000000, 0.035, 21, 65]
+      - row: [3, "Vida Temporal", "VT-003", "Term Life", 300000, 0.030, 25, 70]
+      - row: [4, "Vida Universal", "VU-004", "Universal Life", 750000, 0.045, 25, 75]
+      - row: [5, "Accidentes Personales", "AP-005", "Personal Accident", 200000, 0.060, 16, 70]
+    
+    policies:
+      - field: Status
+        distribution:
+          Active: 0.70
+          Expired: 0.15
+          Cancelled: 0.12
+          Suspended: 0.03
+      
+      - field: AnnualPremium
+        distribution: lognormal             # Realistic for insurance
+        mean: 1500
+        std_dev: 1.5
+        min: 100
+        max: 10000
+      
+      - field: SumAssured
+        formula: "AnnualPremium * random(15, 25)"
+      
+      - field: ProductKey
+        distribution:
+          1: 0.45
+          2: 0.35
+          3: 0.12
+          4: 0.05
+          5: 0.03
+    
+    claims:
+      - field: Status
+        distribution:
+          Paid: 0.80
+          Approved: 0.10
+          Denied: 0.05
+          Reported: 0.05
+      
+      - field: PaidAmount
+        formula: "RANDOM(0.5, 1.0) * ClaimAmount"
+  
+  # Referential integrity constraints
+  foreign_key_rules:
+    - policies.ProductKey → product.ProductKey
+    - policies.CustomerKey → customer.CustomerKey
+    - policies.AgencyKey → agency.AgencyKey
+    - policies.UnderwriterKey → underwriter.UnderwriterKey
+    - claims.PolicyKey → policies.PolicyKey
+    - premiums.PolicyKey → policies.PolicyKey
+
+################################################################################
+# DASHBOARD TEMPLATES
+################################################################################
+dashboards:
+  - name: Executive Dashboard
+    description: "High-level business metrics"
+    pages:
+      - name: Overview
+        visuals:
+          - title: Policies Issued (YoY)
+            type: card
+            metric: Issued Policies
+            comparison: previous_year_change
+          
+          - title: Premium Income Trend
+            type: line
+            metric: Premium Income
+            axis: calendar[MonthYear]
+            period: last_24_months
+          
+          - title: Loss Ratio by Product
+            type: column
+            metric: Loss Ratio
+            axis: product[ProductType]
+          
+          - title: Retention Rate
+            type: gauge
+            metric: Retention Rate
+            target: 85
+            min: 0
+            max: 100
+  
+  - name: Agency Performance
+    description: "For Regional Managers"
+    pages:
+      - name: Ranking
+        visuals:
+          - title: Premium Income by Agency
+            type: bar
+            metric: Premium Income
+            axis: agency[AgencyName]
+            sort: descending
+            top: 20
+          
+          - title: Cancellation Rate by Agency
+            type: scatter
+            x_metric: Premium Income
+            y_metric: Cancellation Rate
+            color: agency[Region]
+
+################################################################################
+# VALIDATION RULES (Data Quality)
+################################################################################
+validation:
+  rules:
+    - table: policies
+      rule: "IssueDate ≤ EffectiveDate < ExpiryDate"
+      severity: error
+      message: "Policy dates must be in chronological order"
+    
+    - table: policies
+      rule: "AnnualPremium > 0 AND SumAssured > 0"
+      severity: error
+      message: "Premium and sum assured must be positive"
+    
+    - table: policies
+      rule: "SumAssured ≥ AnnualPremium"
+      severity: warning
+      message: "Sum assured should typically exceed annual premium"
+    
+    - table: claims
+      rule: "ClaimDate ≤ ReportedDate"
+      severity: error
+      message: "Claim date cannot be after reported date"
+    
+    - table: policies
+      rule: "No duplicate PolicyKey"
+      severity: error
+      message: "PolicyKey must be unique
+
+    - table: premiums
+      rule: "Amount > 0"
+      severity: error
+      message: "Premium amount must be positive"
+
+################################################################################
+# IMPLEMENTATION STATUS
+################################################################################
+implementation:
+  phase: 1_foundation_complete
+  status: manual_tmdl_created
+  created_at: 2026-06-18T22:00:00Z
+  
+  # What's been manually created
+  artifacts:
+    - type: TMDL
+      count: 12
+      status: complete
+      location: src/LifeInsuranceAnalytics.SemanticModel/definition/
+    
+    - type: Documentation
+      count: 3
+      status: complete
+      location: .requirements/, .resources/
+    
+    - type: Sample Data
+      count: 0
+      status: pending
+    
+    - type: Dashboard
+      count: 0
+      status: pending
+  
+  # What needs generation
+  next_phases:
+    - phase_2: "Build generators (TMDL, Measure, KB)"
+    - phase_3: "Generate all artifacts from this spec"
+    - phase_4: "Validate end-to-end"
+    - phase_5: "Test multi-industry support"
+
+################################################################################
+# NOTES FOR GENERATOR DEVELOPERS
+################################################################################
+generator_notes:
+  - "This spec completely captures the insurance model"
+  - "Generators should create identical TMDL/measures as manually created files"
+  - "Use this as test case: spec_in → generator → outputs_match_phase1"
+  - "Sample data must maintain referential integrity"
+  - "Dashboard visuals should follow Power BI best practices"
